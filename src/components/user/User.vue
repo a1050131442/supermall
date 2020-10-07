@@ -39,7 +39,7 @@
           <el-button size="mini" type="primary" @click="showeditfialog(scope.row.id)" icon="el-icon-edit"></el-button>
           <el-button size="mini" type="danger" icon="el-icon-delete" @click="reoveuserbyid(scope.row.id)"></el-button>
           <el-tooltip :enterable="false" effect="dark" content="分配角色" placement="top">
-            <el-button size="mini" type="warning" icon="el-icon-setting"></el-button>
+            <el-button size="mini" type="warning" icon="el-icon-setting" @click="setrole(scope.row)"></el-button>
           </el-tooltip>
         </template>
       </el-table-column>
@@ -56,7 +56,7 @@
     </el-pagination>
 </el-card>
 <!-- 添加用户的对话框 -->
-<el-dialog
+  <el-dialog
   title="添加用户"
   :visible.sync="adddialogvisble"
   width="50%"
@@ -104,6 +104,32 @@
     <el-button type="primary" @click="edituserinfo">确 定</el-button>
   </span>
 </el-dialog>
+<!-- 分配角色的对话框 -->
+<el-dialog
+  title="分配角色"
+  :visible.sync="setroledialogvisble"
+  width="50%"
+  @close="editfialogclosed">
+  <div>
+    <p>当前的用户: {{userinfo.username}}</p>
+    <p>当前的角色: {{userinfo.role_name}}</p>
+    <p>分配新角色:
+    <el-select v-model="selectrolrid" placeholder="请选择">
+    <el-option
+      v-for="item in roleslist"
+      :key="item.id"
+      :label="item.roleName"
+      :value="item.id">
+    </el-option>
+  </el-select>
+    </p>
+  </div>
+  <span slot="footer" class="dialog-footer">
+    <el-button @click="setroledialogvisble = false">取 消</el-button>
+    <el-button type="primary" @click="saveroleinfo">确 定</el-button>
+  </span>
+</el-dialog>
+
     </div>
 </template>
 
@@ -181,7 +207,15 @@ export default {
         mobile: [
           { required: true, message: '请输入邮箱', trigger: 'blur' },
           { validator: checkmobile, trigger: 'blur' }]
-      }
+      },
+      // 控制分配角色的对话框
+      setroledialogvisble: false,
+      // 需要被分配角色的用户信息
+      userinfo: {},
+      // 所有角色的数据列表
+      roleslist: [],
+      // 分配角色选中的数据
+      selectrolrid: ''
     }
   },
   created () {
@@ -244,6 +278,7 @@ export default {
       if (res.meta.status !== 200) {
         return this.$message.error('查询用户信息失败')
       }
+      console.log(id)
       this.editfrom = res.data
       this.editdialogvisble = true
     },
@@ -286,8 +321,38 @@ export default {
       if (res.meta.status !== 200) {
         return this.$message.error('删除用户失败')
       }
-      this.$message.success('修改用户成功')
+      this.$message.success('删除用户成功')
       this.getUserList()
+    },
+    // 展示分配角色对话框
+    async setrole (userinfo) {
+      this.userinfo = userinfo
+      // 在展示所有角色前获取所有角色列表
+      const { data: res } = await this.$http.get('roles')
+      if (res.meta.status !== 200) {
+        return this.$message.error('获取角色列表失败')
+      }
+      this.roleslist = res.data
+      this.setroledialogvisble = true
+    },
+    // 点击按钮分配角色
+    async saveroleinfo () {
+      if (!this.selectrolrid) {
+        return this.$message.error('请选择你要分配的角色')
+      }
+      const { data: res } = await this.$http.put(`users/${this.userinfo.id}/role`, { rid: this.selectrolrid })
+      console.log(res)
+      if (res.meta.status !== 200) {
+        return this.$message.error('分配角色失败')
+      }
+      this.$message.success('分配角色成功')
+      this.getUserList()
+      this.setroledialogvisble = false
+    },
+    // 分配角色对话框关闭事件
+    editfialogclosed () {
+      this.selectrolrid = ''
+      this.userinfo = {}
     }
   }
 }
