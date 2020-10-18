@@ -1,25 +1,46 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
-import Home from '../views/Home.vue'
+import Vue from 'vue'
+import Router from 'vue-router'
+import Login from '../components/Login.vue'
+import Home from '../components/home.vue'
+import welcome from '../components/welcome.vue'
+import users from '../components/user/User.vue'
+import Rights from '../components/power/rights.vue'
+import Roles from '../components/power/roles.vue'
+import Cate from '../components/goobs/cate.vue'
+import Params from '../components/goobs/params.vue'
 
-const routes = [
-  {
-    path: '/',
-    name: 'Home',
-    component: Home
-  },
-  {
-    path: '/about',
-    name: 'About',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
-  }
-]
-
-const router = createRouter({
-  history: createWebHashHistory(),
-  routes
+Vue.use(Router)
+const router = new Router({
+  routes: [
+    { path: '/', redirect: '/login' },
+    { path: '/login', component: Login },
+    {
+      path: '/home',
+      component: Home,
+      redirect: '/welcome',
+      children: [
+        { path: '/welcome', component: welcome },
+        { path: '/users', component: users },
+        { path: '/rights', component: Rights },
+        { path: '/roles', component: Roles },
+        { path: '/categories', component: Cate },
+        { path: '/params', component: Params }
+      ]
+    }
+  ]
 })
 
+// 挂载路由导航守卫
+router.beforeEach((to, from, next) => {
+// to 要访问那个路径
+// from 从哪里来
+// next 执行下一步
+
+  if (to.path === '/login') return next()
+  else {
+    const tokenStr = window.sessionStorage.getItem('token')
+    if (!tokenStr) return next('/login')
+    next()
+  }
+})
 export default router
